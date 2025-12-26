@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import type { Booking } from "../../../drizzle/schema";
+import BookingCalendar from "@/components/BookingCalendar";
+import DailyBookingsList from "@/components/DailyBookingsList";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -32,6 +34,8 @@ const statusLabels = {
 export default function AdminDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const bookingsQuery = trpc.booking.getAllBookings.useQuery();
@@ -141,50 +145,69 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Filter Section */}
+      {/* View Mode Toggle */}
       <section className="py-8 border-b border-border/30">
         <div className="container">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mb-6">
             <Button
-              onClick={() => setSelectedStatus(null)}
-              variant={selectedStatus === null ? "default" : "outline"}
+              onClick={() => setViewMode("list")}
+              variant={viewMode === "list" ? "default" : "outline"}
               className="rounded-full"
             >
-              すべて
+              リスト表示
             </Button>
             <Button
-              onClick={() => setSelectedStatus("pending")}
-              variant={selectedStatus === "pending" ? "default" : "outline"}
+              onClick={() => setViewMode("calendar")}
+              variant={viewMode === "calendar" ? "default" : "outline"}
               className="rounded-full"
             >
-              未確認
-            </Button>
-            <Button
-              onClick={() => setSelectedStatus("confirmed")}
-              variant={selectedStatus === "confirmed" ? "default" : "outline"}
-              className="rounded-full"
-            >
-              確認済み
-            </Button>
-            <Button
-              onClick={() => setSelectedStatus("completed")}
-              variant={selectedStatus === "completed" ? "default" : "outline"}
-              className="rounded-full"
-            >
-              完了
-            </Button>
-            <Button
-              onClick={() => setSelectedStatus("cancelled")}
-              variant={selectedStatus === "cancelled" ? "default" : "outline"}
-              className="rounded-full"
-            >
-              キャンセル
+              カレンダー表示
             </Button>
           </div>
+
+          {viewMode === "list" && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => setSelectedStatus(null)}
+                variant={selectedStatus === null ? "default" : "outline"}
+                className="rounded-full"
+              >
+                すべて
+              </Button>
+              <Button
+                onClick={() => setSelectedStatus("pending")}
+                variant={selectedStatus === "pending" ? "default" : "outline"}
+                className="rounded-full"
+              >
+                未確認
+              </Button>
+              <Button
+                onClick={() => setSelectedStatus("confirmed")}
+                variant={selectedStatus === "confirmed" ? "default" : "outline"}
+                className="rounded-full"
+              >
+                確認済み
+              </Button>
+              <Button
+                onClick={() => setSelectedStatus("completed")}
+                variant={selectedStatus === "completed" ? "default" : "outline"}
+                className="rounded-full"
+              >
+                完了
+              </Button>
+              <Button
+                onClick={() => setSelectedStatus("cancelled")}
+                variant={selectedStatus === "cancelled" ? "default" : "outline"}
+                className="rounded-full"
+              >
+                キャンセル
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Bookings Table */}
+      {/* Content Section */}
       <section className="py-16 md:py-24">
         <div className="container">
           <motion.div
@@ -193,57 +216,76 @@ export default function AdminDashboard() {
             variants={fadeIn}
             viewport={{ once: true }}
           >
-            {filteredBookings.length === 0 ? (
-              <Card className="p-12 text-center border-border/50">
-                <p className="text-muted-foreground">予約がありません</p>
-              </Card>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border/30">
-                      <th className="text-left py-4 px-4 font-medium text-sm">日時</th>
-                      <th className="text-left py-4 px-4 font-medium text-sm">顧客名</th>
-                      <th className="text-left py-4 px-4 font-medium text-sm">セラピスト</th>
-                      <th className="text-left py-4 px-4 font-medium text-sm">メニュー</th>
-                      <th className="text-left py-4 px-4 font-medium text-sm">金額</th>
-                      <th className="text-left py-4 px-4 font-medium text-sm">ステータス</th>
-                      <th className="text-left py-4 px-4 font-medium text-sm">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBookings.map((booking) => (
-                      <tr key={booking.id} className="border-b border-border/20 hover:bg-secondary/10 transition-colors">
-                        <td className="py-4 px-4 text-sm">
-                          {new Date(booking.reservationDate).toLocaleString("ja-JP")}
-                        </td>
-                        <td className="py-4 px-4 text-sm">{booking.customerName}</td>
-                        <td className="py-4 px-4 text-sm">{booking.therapistName}</td>
-                        <td className="py-4 px-4 text-sm">{booking.menuName}</td>
-                        <td className="py-4 px-4 text-sm font-medium">¥{booking.price.toLocaleString()}</td>
-                        <td className="py-4 px-4 text-sm">
-                          <Badge className={statusColors[booking.status as keyof typeof statusColors]}>
-                            {statusLabels[booking.status as keyof typeof statusLabels]}
-                          </Badge>
-                        </td>
-                        <td className="py-4 px-4 text-sm">
-                          <select
-                            value={booking.status}
-                            onChange={(e) => handleStatusChange(booking.id, e.target.value)}
-                            disabled={updatingId === booking.id}
-                            className="px-2 py-1 border border-border rounded text-xs bg-background text-foreground cursor-pointer"
-                          >
-                            <option value="pending">未確認</option>
-                            <option value="confirmed">確認済み</option>
-                            <option value="completed">完了</option>
-                            <option value="cancelled">キャンセル</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {viewMode === "calendar" ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                  <BookingCalendar
+                    bookings={bookings}
+                    onDateSelect={setSelectedDate}
+                  />
+                </div>
+                <div>
+                  <DailyBookingsList
+                    date={selectedDate}
+                    bookings={bookings}
+                  />
+                </div>
               </div>
+            ) : (
+              <>
+                {filteredBookings.length === 0 ? (
+                  <Card className="p-12 text-center border-border/50">
+                    <p className="text-muted-foreground">予約がありません</p>
+                  </Card>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border/30">
+                          <th className="text-left py-4 px-4 font-medium text-sm">日時</th>
+                          <th className="text-left py-4 px-4 font-medium text-sm">顧客名</th>
+                          <th className="text-left py-4 px-4 font-medium text-sm">セラピスト</th>
+                          <th className="text-left py-4 px-4 font-medium text-sm">メニュー</th>
+                          <th className="text-left py-4 px-4 font-medium text-sm">金額</th>
+                          <th className="text-left py-4 px-4 font-medium text-sm">ステータス</th>
+                          <th className="text-left py-4 px-4 font-medium text-sm">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredBookings.map((booking) => (
+                          <tr key={booking.id} className="border-b border-border/20 hover:bg-secondary/10 transition-colors">
+                            <td className="py-4 px-4 text-sm">
+                              {new Date(booking.reservationDate).toLocaleString("ja-JP")}
+                            </td>
+                            <td className="py-4 px-4 text-sm">{booking.customerName}</td>
+                            <td className="py-4 px-4 text-sm">{booking.therapistName}</td>
+                            <td className="py-4 px-4 text-sm">{booking.menuName}</td>
+                            <td className="py-4 px-4 text-sm font-medium">¥{booking.price.toLocaleString()}</td>
+                            <td className="py-4 px-4 text-sm">
+                              <Badge className={statusColors[booking.status as keyof typeof statusColors]}>
+                                {statusLabels[booking.status as keyof typeof statusLabels]}
+                              </Badge>
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              <select
+                                value={booking.status}
+                                onChange={(e) => handleStatusChange(booking.id, e.target.value)}
+                                disabled={updatingId === booking.id}
+                                className="px-2 py-1 border border-border rounded text-xs bg-background text-foreground cursor-pointer"
+                              >
+                                <option value="pending">未確認</option>
+                                <option value="confirmed">確認済み</option>
+                                <option value="completed">完了</option>
+                                <option value="cancelled">キャンセル</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </motion.div>
         </div>
