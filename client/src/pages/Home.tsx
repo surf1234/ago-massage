@@ -239,12 +239,16 @@ export default function Home() {
             あなただけの癒しの時間をお過ごしください。
           </p>
           <div className="pt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="rounded-full px-10 py-6 text-base tracking-widest shadow-lg">
-              オンライン予約
-            </Button>
-            <Button size="lg" variant="outline" className="rounded-full px-10 py-6 text-base tracking-widest border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-              お問い合わせ
-            </Button>
+            <Link href="/booking">
+              <Button size="lg" variant="secondary" className="rounded-full px-10 py-6 text-base tracking-widest shadow-lg">
+                オンライン予約
+              </Button>
+            </Link>
+            <a href="tel:03-1234-5678">
+              <Button size="lg" variant="outline" className="rounded-full px-10 py-6 text-base tracking-widest border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+                お問い合わせ
+              </Button>
+            </a>
           </div>
         </div>
       </section>
