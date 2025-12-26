@@ -69,9 +69,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
             <Link href="/booking">
-              <Button variant="outline" className="ml-4 rounded-full px-6 border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-500">
+              <a className="ml-4 inline-flex items-center justify-center px-6 py-2 border border-primary/20 text-primary rounded-full hover:bg-primary hover:text-primary-foreground transition-all duration-500 text-sm tracking-wider font-medium">
                 ご予約
-              </Button>
+              </a>
             </Link>
           </nav>
 
@@ -105,9 +105,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
           <Link href="/booking">
-            <Button className="mt-8 rounded-full px-8 py-6 text-lg bg-primary text-primary-foreground">
+            <a className="mt-8 inline-block rounded-full px-8 py-6 text-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-500 tracking-widest font-medium">
               オンライン予約
-            </Button>
+            </a>
           </Link>
         </nav>
       </div>
