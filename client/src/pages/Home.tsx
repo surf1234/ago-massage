@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Star, Clock, Leaf } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -19,6 +20,8 @@ const stagger = {
 };
 
 export default function Home() {
+  const { user, loading, error, isAuthenticated, logout } = useAuth();
+
   return (
     <Layout>
       {/* Hero Section */}

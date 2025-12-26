@@ -68,9 +68,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </a>
               </Link>
             ))}
-            <Button variant="outline" className="ml-4 rounded-full px-6 border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-500">
-              ご予約
-            </Button>
+            <Link href="/booking">
+              <Button variant="outline" className="ml-4 rounded-full px-6 border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-500">
+                ご予約
+              </Button>
+            </Link>
           </nav>
 
           {/* Mobile Menu Toggle */}
@@ -102,9 +104,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </a>
             </Link>
           ))}
-          <Button className="mt-8 rounded-full px-8 py-6 text-lg bg-primary text-primary-foreground">
-            オンライン予約
-          </Button>
+          <Link href="/booking">
+            <Button className="mt-8 rounded-full px-8 py-6 text-lg bg-primary text-primary-foreground">
+              オンライン予約
+            </Button>
+          </Link>
         </nav>
       </div>
 

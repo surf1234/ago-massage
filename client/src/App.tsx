@@ -9,9 +9,10 @@ import About from "./pages/About";
 import Menu from "./pages/Menu";
 import Staff from "./pages/Staff";
 import Access from "./pages/Access";
-
+import Booking from "./pages/Booking";
 
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/menu" component={Menu} />
       <Route path="/staff" component={Staff} />
       <Route path="/access" component={Access} />
+      <Route path="/booking" component={Booking} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
