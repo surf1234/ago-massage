@@ -10,6 +10,7 @@ import Menu from "./pages/Menu";
 import Staff from "./pages/Staff";
 import Access from "./pages/Access";
 import Booking from "./pages/Booking";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/staff" component={Staff} />
       <Route path="/access" component={Access} />
       <Route path="/booking" component={Booking} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

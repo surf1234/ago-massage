@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { createBooking, getBookingsByUserId } from "./db";
+import { createBooking, getBookingsByUserId, getAllBookings, updateBookingStatus, getBookingStats } from "./db";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -63,6 +63,52 @@ export const appRouter = router({
         } catch (error) {
           console.error("Failed to get bookings:", error);
           return [];
+        }
+      }),
+
+    getAllBookings: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user?.role !== 'admin') {
+          throw new Error("管理者のみアクセス可能");
+        }
+        try {
+          const bookings = await getAllBookings();
+          return bookings;
+        } catch (error) {
+          console.error("Failed to get all bookings:", error);
+          return [];
+        }
+      }),
+
+    updateStatus: protectedProcedure
+      .input(z.object({
+        bookingId: z.number(),
+        status: z.enum(["pending", "confirmed", "cancelled", "completed"]),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== 'admin') {
+          throw new Error("管理者のみアクセス可能");
+        }
+        try {
+          await updateBookingStatus(input.bookingId, input.status);
+          return { success: true };
+        } catch (error) {
+          console.error("Failed to update booking status:", error);
+          throw new Error("予約ステータスの更新に失敗しました");
+        }
+      }),
+
+    getStats: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user?.role !== 'admin') {
+          throw new Error("管理者のみアクセス可能");
+        }
+        try {
+          const stats = await getBookingStats();
+          return stats;
+        } catch (error) {
+          console.error("Failed to get booking stats:", error);
+          return { total: 0, confirmed: 0, pending: 0, completed: 0, cancelled: 0, totalRevenue: 0 };
         }
       }),
   }),
