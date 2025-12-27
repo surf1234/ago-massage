@@ -35,6 +35,32 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         try {
+          // 時間帯の重複チェック
+          const startDate = new Date(input.reservationDate);
+          startDate.setHours(0, 0, 0, 0);
+          const endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + 1);
+
+          const existingBookings = await getBookingsByDateAndTherapist(
+            input.therapistName,
+            startDate,
+            endDate
+          );
+
+          const newBookingStart = new Date(input.reservationDate);
+          const newBookingEnd = new Date(newBookingStart.getTime() + input.duration * 60000);
+
+          for (const booking of existingBookings) {
+            if (booking.status === 'cancelled') continue;
+            
+            const bookingStart = new Date(booking.reservationDate);
+            const bookingEnd = new Date(bookingStart.getTime() + booking.duration * 60000);
+
+            if (newBookingStart < bookingEnd && newBookingEnd > bookingStart) {
+              throw new Error("この時間帯は既に予約が入っています。別の時間をお選びください。");
+            }
+          }
+
           const userId = ctx.user?.id || 0;
           const result = await createBooking({
             userId,
@@ -52,7 +78,7 @@ export const appRouter = router({
           return { success: true, bookingId: (result as any)?.insertId || 0 };
         } catch (error) {
           console.error("Failed to create booking:", error);
-          throw new Error("予約の作成に失敗しました");
+          throw error instanceof Error ? error : new Error("予約の作成に失敗しました");
         }
       }),
 
@@ -134,6 +160,8 @@ export const appRouter = router({
 
           const bookedHours = new Set<number>();
           bookings.forEach((booking: Booking) => {
+            if (booking.status === 'cancelled') return;
+            
             const bookingStart = new Date(booking.reservationDate);
             const bookingEnd = new Date(bookingStart.getTime() + booking.duration * 60000);
 
