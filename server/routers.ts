@@ -3,7 +3,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { createBooking, getBookingsByUserId, getAllBookings, updateBookingStatus, getBookingStats } from "./db";
+import { createBooking, getBookingsByUserId, getAllBookings, updateBookingStatus, getBookingStats, getBookingsByDateAndTherapist } from "./db";
+import type { Booking } from "../drizzle/schema";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -109,6 +110,51 @@ export const appRouter = router({
         } catch (error) {
           console.error("Failed to get booking stats:", error);
           return { total: 0, confirmed: 0, pending: 0, completed: 0, cancelled: 0, totalRevenue: 0 };
+        }
+      }),
+
+    getAvailableSlots: publicProcedure
+      .input(z.object({
+        date: z.string(),
+        therapistName: z.string(),
+        duration: z.number().int().positive(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const [year, month, day] = input.date.split("-").map(Number);
+          const dateStart = new Date(year, month - 1, day, 0, 0, 0);
+          const dateEnd = new Date(year, month - 1, day, 23, 59, 59);
+
+          const bookings = await getBookingsByDateAndTherapist(input.therapistName, dateStart, dateEnd);
+
+          const allSlots = Array.from({ length: 11 }, (_, i) => {
+            const hour = 11 + i;
+            return { hour, time: `${hour}:00` };
+          });
+
+          const bookedHours = new Set<number>();
+          bookings.forEach((booking: Booking) => {
+            const bookingStart = new Date(booking.reservationDate);
+            const bookingEnd = new Date(bookingStart.getTime() + booking.duration * 60000);
+
+            allSlots.forEach(slot => {
+              const slotStart = new Date(year, month - 1, day, slot.hour, 0, 0);
+              const slotEnd = new Date(slotStart.getTime() + input.duration * 60000);
+
+              if (slotStart < bookingEnd && slotEnd > bookingStart) {
+                bookedHours.add(slot.hour);
+              }
+            });
+          });
+
+          const availableSlots = allSlots
+            .filter(slot => !bookedHours.has(slot.hour))
+            .map(slot => slot.time);
+
+          return availableSlots;
+        } catch (error) {
+          console.error("Failed to get available slots:", error);
+          return [];
         }
       }),
   }),

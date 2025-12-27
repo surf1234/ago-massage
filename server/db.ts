@@ -213,6 +213,28 @@ export async function getBookingsByDateRange(startDate: Date, endDate: Date) {
   }
 }
 
+// Get bookings by date and therapist
+export async function getBookingsByDateAndTherapist(therapistName: string, startDate: Date, endDate: Date) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get bookings: database not available");
+    return [];
+  }
+
+  try {
+    const result = await db.select().from(bookings)
+      .where(and(
+        eq(bookings.therapistName, therapistName),
+        gte(bookings.reservationDate, startDate),
+        lte(bookings.reservationDate, endDate)
+      ));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get bookings by date and therapist:", error);
+    return [];
+  }
+}
+
 // Get booking statistics
 export async function getBookingStats() {
   const db = await getDb();

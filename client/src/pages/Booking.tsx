@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { Calendar, Clock, User, Mail, Phone } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -45,7 +45,30 @@ export default function Booking() {
   });
 
   const [selectedMenu, setSelectedMenu] = useState<typeof menus[0] | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
   const bookingMutation = trpc.booking.create.useMutation();
+  const availableSlotsQuery = trpc.booking.getAvailableSlots.useQuery(
+    {
+      date: formData.reservationDate,
+      therapistName: formData.therapistName,
+      duration: selectedMenu?.duration || 60,
+    },
+    {
+      enabled: !!(formData.reservationDate && formData.therapistName && selectedMenu),
+    }
+  );
+
+  useEffect(() => {
+    if (availableSlotsQuery.data) {
+      setAvailableSlots(availableSlotsQuery.data);
+      // 最初の利用可能な時間を選択
+      if (availableSlotsQuery.data.length > 0 && !availableSlotsQuery.data.includes(formData.reservationTime)) {
+        setFormData(prev => ({ ...prev, reservationTime: availableSlotsQuery.data[0] }));
+      }
+    }
+  }, [availableSlotsQuery.data]);
 
   const handleMenuChange = (menuName: string) => {
     const menu = menus.find(m => m.name === menuName);
@@ -96,6 +119,7 @@ export default function Booking() {
         notes: ""
       });
       setSelectedMenu(null);
+      setAvailableSlots([]);
     } catch (error) {
       toast.error("予約の送信に失敗しました。もう一度お試しください。");
     }
@@ -195,16 +219,22 @@ export default function Booking() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Array.from({ length: 11 }, (_, i) => {
-                          const hour = 11 + i;
-                          return `${hour}:00`;
-                        }).map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
+                        {availableSlots.length > 0 ? (
+                          availableSlots.map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {time}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-slots" disabled>
+                            {formData.reservationDate && formData.therapistName ? "利用可能な時間帯がありません" : "日付とセラピストを選択してください"}
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
+                    {availableSlotsQuery.isLoading && (
+                      <p className="text-xs text-muted-foreground">利用可能な時間帯を読み込み中...</p>
+                    )}
                   </div>
                 </div>
 
@@ -248,82 +278,29 @@ export default function Booking() {
                   />
                 </div>
 
-                {/* Notes */}
                 <div className="space-y-3">
                   <Label className="text-base font-medium">ご質問・ご要望（任意）</Label>
                   <Textarea
-                    placeholder="施術に関するご要望やご質問がございましたら、こちらにご記入ください。"
+                    placeholder="施術に関するご質問やご要望がございましたら、こちらにご記入ください。"
                     value={formData.notes}
                     onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                     className="min-h-24 resize-none"
                   />
                 </div>
 
-                {/* Summary */}
-                {selectedMenu && (
-                  <div className="bg-secondary/30 p-6 rounded-sm space-y-2 border border-border/50">
-                    <h3 className="font-serif text-lg tracking-wide">ご予約内容</h3>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <p>セラピスト：{formData.therapistName}</p>
-                      <p>メニュー：{formData.menuName}</p>
-                      <p>日時：{formData.reservationDate} {formData.reservationTime}</p>
-                      <p>所要時間：{selectedMenu.duration}分</p>
-                      <p className="font-medium text-foreground pt-2">
-                        料金：¥{selectedMenu.price.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {/* Submit Button */}
-                <Button
-                  type="submit"
-                  disabled={bookingMutation.isPending}
-                  className="w-full h-12 bg-primary text-primary-foreground rounded-full text-base tracking-widest font-medium hover:bg-primary/90 transition-all duration-500"
-                >
-                  {bookingMutation.isPending ? "予約中..." : "予約を確定する"}
-                </Button>
-
-                <p className="text-xs text-muted-foreground text-center">
-                  ご予約後、確認メールをお送りします。<br />
-                  ご不明な点はお気軽にお問い合わせください。
-                </p>
+                <div className="pt-4">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full rounded-full py-6 text-base tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-500"
+                    disabled={bookingMutation.isPending || availableSlots.length === 0}
+                  >
+                    {bookingMutation.isPending ? "予約中..." : "予約を確定する"}
+                  </Button>
+                </div>
               </form>
             </Card>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Info Section */}
-      <section className="py-20 bg-secondary/20">
-        <div className="container max-w-3xl">
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            variants={fadeIn}
-            viewport={{ once: true }}
-            className="space-y-8"
-          >
-            <h2 className="font-serif text-2xl tracking-widest">ご予約に関するご注意</h2>
-            <div className="space-y-4 text-muted-foreground leading-loose">
-              <p>
-                <span className="font-medium text-foreground">・ご予約について</span><br />
-                完全予約制となっております。ご予約は3日前までにお願いいたします。
-              </p>
-              <p>
-                <span className="font-medium text-foreground">・キャンセルについて</span><br />
-                ご予約日の3日前までのキャンセルは無料です。それ以降のキャンセルはキャンセル料が発生いたします。
-              </p>
-              <p>
-                <span className="font-medium text-foreground">・初回のお客様へ</span><br />
-                初回は30分程度のカウンセリングを含みます。ご希望の時間より早めにご来店ください。
-              </p>
-              <p>
-                <span className="font-medium text-foreground">・ご不明な点</span><br />
-                ご質問やご不明な点がございましたら、お気軽にお電話ください。<br />
-                <span className="text-primary font-medium">03-1234-5678</span>（11:00 - 20:30）
-              </p>
-            </div>
           </motion.div>
         </div>
       </section>
