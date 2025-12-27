@@ -153,12 +153,16 @@ export const appRouter = router({
 
           const bookings = await getBookingsByDateAndTherapist(input.therapistName, dateStart, dateEnd);
 
-          const allSlots = Array.from({ length: 11 }, (_, i) => {
-            const hour = 11 + i;
-            return { hour, time: `${hour}:00` };
-          });
+          // 15分刻みのスロットを生成（11:00～21:45）
+          const allSlots: { hour: number; minute: number; time: string }[] = [];
+          for (let hour = 11; hour <= 21; hour++) {
+            for (let minute = 0; minute < 60; minute += 15) {
+              const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+              allSlots.push({ hour, minute, time: timeStr });
+            }
+          }
 
-          const bookedHours = new Set<number>();
+          const bookedSlots = new Set<string>();
           bookings.forEach((booking: Booking) => {
             if (booking.status === 'cancelled') return;
             
@@ -166,17 +170,17 @@ export const appRouter = router({
             const bookingEnd = new Date(bookingStart.getTime() + booking.duration * 60000);
 
             allSlots.forEach(slot => {
-              const slotStart = new Date(year, month - 1, day, slot.hour, 0, 0);
+              const slotStart = new Date(year, month - 1, day, slot.hour, slot.minute, 0);
               const slotEnd = new Date(slotStart.getTime() + input.duration * 60000);
 
               if (slotStart < bookingEnd && slotEnd > bookingStart) {
-                bookedHours.add(slot.hour);
+                bookedSlots.add(slot.time);
               }
             });
           });
 
           const availableSlots = allSlots
-            .filter(slot => !bookedHours.has(slot.hour))
+            .filter(slot => !bookedSlots.has(slot.time))
             .map(slot => slot.time);
 
           return availableSlots;
