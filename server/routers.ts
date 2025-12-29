@@ -149,7 +149,7 @@ export const appRouter = router({
         try {
           const [year, month, day] = input.date.split("-").map(Number);
           const dateStart = new Date(year, month - 1, day, 0, 0, 0);
-          const dateEnd = new Date(year, month - 1, day, 23, 59, 59);
+          const dateEnd = new Date(year, month - 1, day + 1, 0, 0, 0);
 
           const bookings = await getBookingsByDateAndTherapist(input.therapistName, dateStart, dateEnd);
 
