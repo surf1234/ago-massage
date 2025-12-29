@@ -11,6 +11,7 @@ interface BookingCalendarProps {
 
 export default function BookingCalendar({ bookings, onDateSelect }: BookingCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -95,6 +96,8 @@ export default function BookingCalendar({ bookings, onDateSelect }: BookingCalen
   };
 
   const handleDateClick = (date: Date) => {
+    const dateStr = date.toISOString().split("T")[0];
+    setSelectedDate(dateStr);
     if (onDateSelect) {
       onDateSelect(date);
     }
@@ -146,16 +149,19 @@ export default function BookingCalendar({ bookings, onDateSelect }: BookingCalen
           const hasBookings = dayBookings.length > 0;
           const isToday =
             dayObj.date.toDateString() === new Date().toDateString();
+          const dateStr = dayObj.date.toISOString().split("T")[0];
+          const isSelected = selectedDate === dateStr;
 
           return (
             <div
               key={idx}
               onClick={() => dayObj.isCurrentMonth && handleDateClick(dayObj.date)}
               className={`
-                min-h-24 p-2 rounded-sm border border-border/30 cursor-pointer transition-all
+                min-h-24 p-2 rounded-sm cursor-pointer transition-all
                 ${dayObj.isCurrentMonth ? "bg-background hover:bg-secondary/50" : "bg-secondary/10"}
                 ${isToday ? "ring-2 ring-primary" : ""}
                 ${hasBookings ? "bg-primary/5" : ""}
+                ${isSelected ? "border-2 border-black" : "border border-transparent"}
               `}
             >
               <div className={`text-sm font-medium mb-1 ${dayObj.isCurrentMonth ? "text-foreground" : "text-muted-foreground"}`}>

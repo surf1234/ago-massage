@@ -167,6 +167,10 @@ export const appRouter = router({
             if (booking.status === 'cancelled') return;
             
             const bookingStart = new Date(booking.reservationDate);
+            if (isNaN(bookingStart.getTime())) {
+              console.error('Invalid booking date:', booking.reservationDate);
+              return;
+            }
             const bookingEnd = new Date(bookingStart.getTime() + booking.duration * 60000);
 
             allSlots.forEach(slot => {
